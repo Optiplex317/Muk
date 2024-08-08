@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Foodpanda Photo Search Library</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      color: #000; /* Default text color */
+      padding-top: 50px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .search-container {
+      max-width: 1200px;
+      margin: auto;
+      display: none; /* Hide the search container initially */
+    }
+    .search-results {
+      margin-top: 20px;
+    }
+    .result-item {
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: #fff;
+      text-align: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .result-item img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    .no-results {
+      text-align: center;
+      font-size: 1.2em;
+      color: #6c757d;
+    }
+    /* Splash screen styles */
+    .splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .splash-screen img {
+      width: 25%; /* Adjust width to 25% */
+      height: auto;
+    }
+    /* Additional GIF image styles */
+    .additional-gif {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .additional-gif img {
+      width: 8%; /* Adjust as needed */
+      max-width: 600px; /* Adjust to set a max width */
+      height: auto;
+    }
+    /* Dark mode styles */
+    body.dark-mode {
+      background-color: #181818;
+      color: #fff; /* Change text color to white in dark mode */
+    }
+    .result-item.dark-mode {
+      background-color: #282828;
+      color: #fff; /* Change text color to white in dark mode */
+    }
+    .toggle-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background-color: #000;
+      color: #fff;
+      font-size: 1.5em;
+      text-align: center;
+      line-height: 40px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-mode .toggle-button {
+      background-color: #fff;
+      color: #000;
+    }
+    .heading {
+      transition: color 0.3s;
+    }
+    .dark-mode .heading {
+      color: #fff; /* Change heading color to white in dark mode */
+    }
+  </style>
+  <script>
+    let debounceTimer;
+    function search() {
+      var query = document.getElementById('searchQuery').value;
+      google.script.run.withSuccessHandler(displayResults).searchData(query);
+    }
+
+    function debounceSearch() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(search, 300); // Adjust the delay as needed
+    }
+
+    function copyToClipboard(text) {
+      var textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    function displayResults(results) {
+      var output = document.getElementById('results');
+      output.innerHTML = '';
+      
+      if (results.length === 0) {
+        output.innerHTML = '<div class="no-results">No results found</div>';
+        return;
+      }
+      
+      var row = document.createElement('div');
+      row.className = 'row';
+      results.forEach(function(result, index) {
+        var col = document.createElement('div');
+        col.className = 'col-md-3';
+        var listItem = document.createElement('div');
+        listItem.className = 'result-item';
+        listItem.innerHTML = '<h5>' + result.name + '</h5>' +
+                             '<p>' + result.description + '</p>' +
+                             '<img src="' + result.previewUrl + '" alt="' + result.name + '"><br>' +
+                             '<button class="btn btn-primary mt-2" onclick="copyToClipboard(\'' + result.originalUrl + '\')">Copy URL</button>';
+        col.appendChild(listItem);
+        row.appendChild(col);
+        
+        // Create a new row for every 4 items
+        if ((index + 1) % 4 === 0) {
+          output.appendChild(row);
+          row = document.createElement('div');
+          row.className = 'row';
+        }
+      });
+      output.appendChild(row);
+    }
+
+    function toggleDarkMode() {
+      const body = document.body;
+      const heading = document.querySelector('.heading');
+      const toggleButton = document.querySelector('.toggle-button');
+      body.classList.toggle('dark-mode');
+      document.querySelectorAll('.result-item').forEach(function(item) {
+        item.classList.toggle('dark-mode');
+      });
+      heading.classList.toggle('dark-mode');
+      if (body.classList.contains('dark-mode')) {
+        toggleButton.textContent = '?'; // Sun icon for light mode
+      } else {
+        toggleButton.textContent = '??'; // Moon icon for dark mode
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('searchQuery').addEventListener('input', debounceSearch);
+
+      // Block right-click context menu
+      document.addEventListener('contextmenu', function(event) {
+        event.preventDefault();
+      });
+
+      // Splash screen logic
+      setTimeout(function() {
+        document.querySelector('.splash-screen').style.display = 'none';
+        document.querySelector('.search-container').style.display = 'block';
+      }, 6000); // Adjust the delay as needed (6000ms = 6 seconds)
+
+      // Add dark mode toggle button
+      const toggleButton = document.createElement('button');
+      toggleButton.className = 'toggle-button';
+      toggleButton.textContent = '??'; // Initial icon for dark mode
+      toggleButton.onclick = toggleDarkMode;
+      document.body.appendChild(toggleButton);
+    });
+  </script>
+</head>
+<body>
+  <div class="splash-screen">
+    <img src="https://lh3.googleusercontent.com/d/1oqsA9DoWp72fgIeou0bRHaXJEmiIZDYL" alt="Loading...">
+  </div>
+  <div class="container search-container">
+    <h1 class="text-center heading">Foodpanda Photo Search Library</h1>
+    <!-- Additional GIF image below the heading -->
+    <div class="additional-gif">
+      <img src="https://lh3.googleusercontent.com/d/1wFJWUTp6luGHU6L4QwDg5QdaJsv3nYQW" alt="Additional GIF">
+    </div>
+    <div class="input-group mb-3">
+      <input type="text" id="searchQuery" class="form-control" placeholder="Enter name to search">
+    </div>
+    <div id="results" class="search-results"></div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
